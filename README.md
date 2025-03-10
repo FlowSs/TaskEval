@@ -107,17 +107,10 @@ The results obtained are `.json` files named `results_{DATASET}_{MODEL}_eval.jso
 
 ## Getting the similarity
 
-The next step is to compute the similarity using the CodeBLEU metric. To do so, depending on the benchmark / sub_benchmark to assess, one should use the correct script from the `script/sim` folder. They all follow the same approach, with the only different that the `_hard.py` scripts require an argument, that is the sub_benchmark to process using `-s SUB_BENCHMARK`.
+The next step is to compute the similarity using the CodeBLEU metric. To do so, depending on the benchmark, one should use the correct script from the `script/sim` folder. They all follow the same approach.
 
-```python
-get_sim_humanevalplus_hard.py [-h] [-s SUB_BENCHMARK]
+The results obtained are `.json` files named `results_{DATASET}_{MODEL}_sim.json`. All the results obtain from those scripts will be saved in a `sim/` sub-directory in each of the data sub-folders. For instance, `results_humanevalplus_gpt_sim.json` will be in `data/humanevalplus/sim/`
 
-options:
-  -h, --help            show this help message and exit
-  -s SUB_BENCHMARK, --sub_benchmark SUB_BENCHMARK [check|sequence|replacement] for humanevalplus or [sql|sc|df] for ClassEval
-```
-
-The results obtained are `.json` files named `results_{DATASET}_{MODEL}_sim.json` or `results_{DATASET}_{SUB_BENCHMARK}_{MODEL}_sim.json`. All the results obtain from those scripts will be saved in a `sim/` sub-directory in each of the data sub-folders. For instance, `results_humanevalplus_gpt_sim.json` will be in `data/humanevalplus/sim/`
 ## Training the IRT model
 
 The code for the IRT model is in `irt.py`. We use a modification of the Beta-3 IRT model from the [`birt-gd`](https://github.com/Manuelfjr/birt-gd/tree/main): the modifications boil down to adopting a similar initialization in the Beta-3 model as to what is used in the Beta-4 model, which improve the performance without needing to split the discriminant into two sub-variables. 

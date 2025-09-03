@@ -1,6 +1,6 @@
 ## This is the replication package for the paper "Assessing Programming Task Difficulty for Efficient Evaluation of Large Language Models".
 
-A preprint is available [here](). This is a work in progress.
+A preprint is available [here](https://arxiv.org/abs/2407.21227). This is a work in progress.
 
 ## Organization of the repository
 

@@ -19,16 +19,28 @@ A preprint is available [here](). This is a work in progress.
 
 We used Python 3.10 in our experiments in an anaconda environments. The file `environment.yaml` can be used to recreate the environment with anaconda (`conda env create -f environment.yml`).
 
-The scripts for having GPT4 generates the prompts as well as having the LLMs generate codes uses OpenAI and HuggingFace API. As such, both an OpenAI key and HuggingFace token are required. For the scripts to work, one needs to add a `key.json` file in the `script/` directory. This file needs to contain both OpenAI and HuggingFace key/token as follow:
+The scripts for having GPT4 generates the prompts as well as having the LLMs generate codes uses OpenAI, DeepSeekAI and HuggingFace API. As such, both an OpenAI/DeepSeekAI keys and HuggingFace token are required. For the scripts to work, one needs to add a `key.json` file in the `script/` directory. This file needs to contain both OpenAI and HuggingFace key/token as follow:
 
 ```json
 {'OPENAI': YOUR_OPENAI_KEY,
-'HF_TOKEN': YOUR_HF_TOKEN}
+'HF_TOKEN': YOUR_HF_TOKEN,
+'DEEPSEEK': YOUR_DEEPSEEK_KEY}
 ```
+
+The models used are the following:
+
+- codellama/CodeLlama-7b-Instruct-hf
+- google/codegemma-7b-it
+- ise-uiuc/Magicoder-S-DS-6.7B
+- deepseek-ai/deepseek-coder-6.7b-instruct
+- gpt-3.5-turbo-0125
+- deepseek-chat (deepseek-v1)
+- Qwen/Qwen2.5-Coder-7B-Instruct
+- 01-ai/Yi-Coder-1.5B-Chat
 
 ## Results of the RQs
 
-To replicate the results of our RQs, we provide a jupyter notebook `RQ1_to_RQ4.ipynb` that encompasses all our experiments presented in the paper. Each RQ can be executed independently. No pre-processing is required as all the data are available in the repository. Below we provide a step-by-step procedure to obtain the different data necessary to run `RQ1_to_RQ4.ipynb` if you wish to replicate our results.
+To replicate the results of our RQs, we provide a jupyter notebook `RQ1_to_RQ4.ipynb` that encompasses all our experiments presented in the paper. Each RQ can be executed independently. We also include the validation we did (BERTScore over the prompts and difficulty increase with prompt levels). No pre-processing is required as all the data are available in the repository. Below we provide a step-by-step procedure to obtain the different data necessary to run `RQ1_to_RQ4.ipynb` if you wish to replicate our results.
 
 ## Generating the level/rephrasing prompts
 
@@ -37,35 +49,35 @@ The script used is `generate_prompts.py`. It generate either the level type prom
 Usage:
 
 ```python
-generate_prompts.py [-h] [-d DATASET] [-s SUB_BENCHMARK] [--levels] [--rephrase]
+python generate_prompts.py [-h] [-d DATASET] [--levels] [--rephrase]
 
 options:
   -h, --help            show this help message and exit
-  -d DATASET, --dataset DATASET [humaneval|ClassEval]
+  -d DATASET, --dataset DATASET [humanevalplus|ClassEval]
   --levels
   --rephrase
 ```
 
 As the prompts are generated first on the levels and then on the rephrasing, one should first run the script with the `--levels` flag and then with the `--rephrase` flag.
 
-The generated output will be a `.json` file named `prompts_generated_{DATASET}.csv`. In the provided script, the files are saved at the root of the `script/` folder. The actual data are in `data/`. 
+The generated output will be a `.json` file named `prompts_generated_{DATASET}.csv`. The files are saved in the `data/` folder of each respective datasets (data already provided).
 
 ## Running on the code LLMs
 
-The scripts used are `run_llm.py` and `run_llm_greedy.py`. The scripts let a model generates codes for based on the prompts of a given dataset/sub_benchmark. 
+The scripts used are `run_llm.py`. The scripts let a model generates codes for based on the prompts of a given dataset. 
 
 Usage:
 
 ```python
-run_llm.py [-h] [-m MODEL] [-d DATASET] [-s SUB_BENCHMARK]
+python run_llm.py [-h] [-m MODEL] [-d DATASET]
 
 options:
   -h, --help            show this help message and exit
-  -m MODEL, --model MODEL [llama|gemma|gpt|deepseek|magicoder]
-  -d DATASET, --dataset DATASET [humaneval|ClassEval]
+  -m MODEL, --model MODEL [llama|gemma|gpt|deepseek|magicoder|deepseek-chat|qwen-coder|yi-coder]
+  -d DATASET, --dataset DATASET [humanevalplus|ClassEval]
 ```
 
-The generated output will be a `.json` file named `results_{DATASET}_{MODEL}.json` for the script `run_llm.py`. For `run_greedy_llm.py` will have the same output with a `_greedy.json` at the end. In the provided scripts, the files are saved at the root of the `script/` folder. The actual data are in `data/`. 
+The generated output will be a `.json` file named `results_{DATASET}_{MODEL}.json` for the script `run_llm.py`. The files are saved in the `data/` folder of each respective datasets (data already provided).
 
 The outputs of this script should be stored in the `raw/` sub-folder of each data folder. For instance, `results_humanevalplus_gpt.json` should be placed in `data/humanevalplus/raw/`
 
@@ -73,7 +85,7 @@ The outputs of this script should be stored in the `raw/` sub-folder of each dat
 
 To assess the code generated, we do the following:
 
-* For HumanEval+, we make use of the test pipeline provided by the official implementation [EvalPlus](https://github.com/evalplus/evalplus). The final output should be a `.json` file structured with key related to HumanEval task_id. Inside each key, a nested dictionary is contained with the three levels which themselves contain a list of tuple (code, code_result).
+* For HumanEval+, we make use of the test pipeline provided by the official implementation [EvalPlus](https://github.com/evalplus/evalplus/tree/v0.3.1). The final output should be a `.json` file structured with key related to HumanEval task_id. Inside each key, a nested dictionary is contained with the three levels which themselves contain a list of tuple (code, code_result).
 
 ```json
 {
@@ -83,12 +95,13 @@ To assess the code generated, we do the following:
 '1': { ...}
 }
 ```
-This script is used both for greedy and normal approach. 
+
+We provide a script `run_all.sh` to run the evalplus pipeline for each model. The script can be found in `script/test_pipelines/humanevalplus/`.
 
 * For ClassEval, we will use a modified version of their pipeline. To execute it, run the `evaluation.py` in `script/test_pipelines/`. The only parameter to modify is the source model (for instance `-so gpt`).
 
 ```python
-evaluation.py [-h] [-so SOURCE_MODEL] [-e EVAL_DATA] [-st SAMPLED_TASKS]
+python evaluation.py [-h] [-so SOURCE_MODEL] [-e EVAL_DATA] [-st SAMPLED_TASKS]
 
 options:
   -h, --help            show this help message and exit
@@ -99,9 +112,8 @@ options:
   -st SAMPLED_TASKS, --sampled_tasks SAMPLED_TASKS
                         sampled_tasks
 ```
-This script is used both for greedy and normal approach. For the greedy, one should add `_greedy` to the model name, e.g., `-so gpt_greedy`.
 
-*Note*: Some requirements are needed to run the tasks of the benchmarks. One should install the requirements using the `rq.txt` file in each of the `data` repository. We recommend to use a Docker installation to run those pipelines.
+*Note*: Some requirements are needed to run the tasks of the benchmarks. One should install the requirements using the `rq.txt` file in each of the `data` repository. We recommend to use a Docker installation to run those pipelines and we provide a Dockerfile that can be turned into an image using `docker build -t classeval -f scripts/test_pipelines/classeval/Dockerfile .` from the root of the project. The image can then be executed using `docker run -it -v ABSOLUTE_PATH_TO_THE_REPO_ROOT:/var/app/ --rm classeval --source_model=model_name`.
 
 The results obtained are `.json` files named `results_{DATASET}_{MODEL}_eval.json`. They are all formatted similarly to the example in the HumanEval+ pipeline. All the results obtain from those scripts will be saved in a `post_test/` sub-directory in each of the data sub-folders. For instance, `results_humanevalplus_gpt_eval.json` will be in `data/humanevalplus/post_test/`
 
@@ -113,15 +125,16 @@ The results obtained are `.json` files named `results_{DATASET}_{MODEL}_sim.json
 
 ## Training the IRT model
 
-The code for the IRT model is in `irt.py`. We use a modification of the Beta-3 IRT model from the [`birt-gd`](https://github.com/Manuelfjr/birt-gd/tree/main): the modifications boil down to adopting a similar initialization in the Beta-3 model as to what is used in the Beta-4 model, which improve the performance without needing to split the discriminant into two sub-variables. 
+The code for the IRT models is in `irt.py`. We use a modification of the Beta-3 IRT model from the [`birt-gd`](https://github.com/Manuelfjr/birt-gd/tree/main): the modifications boil down to adopting a similar initialization in the Beta-3 model as to what is used in the Beta-4 model, which improve the performance without needing to split the discriminant into two sub-variables. Data to run the IRT models are the aggregated score as described in the paper which are available in `data/irt_data/test_data_{level}.npy`, where `all` means aggregation of all levels (used in the paper), `level_1` etc. is a subset aggregating only certain levels (used for validation).
 
 ```python
 
-irt.py [-h] [-d DATASET]
+python irt.py [-h] [-d DATASET] [-l LEVEL]
 
 options:
   -h, --help            show this help message and exit
   -d DATASET, --dataset DATASET
+  -l LEVEL, --level LEVEL (default: None -> 'all')
 ```
 
 where `DATASET` is either `humanevalplus` or `ClassEval`. This will create three files in the relevant `data/DATASET/irt_data` directory, one for the difficulty, one for the discriminant and one for the ability.
@@ -130,15 +143,16 @@ To verify the modified algorithm works correctly, we can do a sanity check by re
 
 ## Getting the AST nodes
 
-In RQ3, we need to extract the AST nodes for relevant codes to cross compare them to difficulty/discriminant of the tasks. To do so, we use the similarity as calculated previously to prune the code snippets with a similarity < 0.5 compared to a correct (i.e. that passes all the test). As we have access to the oracle, we always have one correct code to compare to. This way, we end up with relevant codes that we extract AST nodes from. One should run:
+In RQ3, we need to extract the AST nodes for relevant codes to cross compare them to difficulty/discriminant of the tasks. To do so, we use the similarity as calculated previously to prune the code snippets with a similarity < threshold compared to a correct (i.e. that passes all the test). As we have access to the oracle, we always have one correct code to compare to. Thresholds taken are {0.4, 0.5, 0.6, 0.7, 0.8}. One should run:
 
 ```python
-ast_tasks_check.py [-h] [-d DATASET]
+python ast_tasks_check.py [-h] [-d DATASET]
 
 options:
   -h, --help            show this help message and exit
   -d DATASET, --dataset DATASET
+  -t THRESHOLD, --threshold THRESHOLD (default: 0.5)
 ```
 
-where `DATASET` is either `humanevalplus` or `ClassEval`. This will create a `structure_types_X.json` in the corresponding `data/` repository.
+where `DATASET` is either `humanevalplus` or `ClassEval`. This will create a `structure_types_X.json` in the corresponding `data/` repository. Results will be used in RQ3 to make sure there is a significance across thresholds for a particular programming constructs (e.g. **If condition**, **Variable assignment** etc.).
 

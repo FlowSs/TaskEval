@@ -1,4 +1,4 @@
-name: HardEval
+name: TaskEval
 channels:
   - pytorch
   - nvidia

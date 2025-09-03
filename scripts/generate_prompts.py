@@ -93,7 +93,7 @@ if __name__ == '__main__':
   if dataset_name not in ['ClassEval', 'humanevalplus']:
     raise Exception(f"Dataset {dataset_name} not recognised")
 
-  file_to_save = f'prompts_generated_{dataset_name}_{args.sub_benchmark}.json'
+  file_to_save = f'prompts_generated_{dataset_name}.json'
   
   print(f"Output will be saved in {file_to_save}")
 
@@ -118,16 +118,17 @@ if __name__ == '__main__':
   if dataset_name == 'humanevalplus':
     dataset = load_dataset("evalplus/humanevalplus")['test'].to_pandas()
   elif dataset_name == 'ClassEval':
-    dataset = pd.read_csv(os.path.join('..', 'data', 'sub_benchmarks', 'classeval','ClassEval_datasets.csv', sep=";"))
+    dataset = pd.read_csv(os.path.join('..', 'data', 'classeval','ClassEval_datasets.csv'), sep=";")
 
 
   # Loading the .json if we already did partial calculation
   # Otherwise, initialize an empty dict
-  if os.path.exists(os.path.join('..', 'data', f'{dataset_name}', file_to_save)):
-    with open(os.path.join('..', 'data', f'{dataset_name}', file_to_save), 'r') as f:
+  if os.path.exists(os.path.join('..', 'data', f'{dataset_name.lower()}', file_to_save)):
+    with open(os.path.join('..', 'data', f'{dataset_name.lower()}', file_to_save), 'r') as f:
       dat = json.load(f)
   else:
     dat = {}
+  
   # Setting up OpenAI client
   client = OpenAI(api_key=OPENAI_API_KEY)
   model_generate = 'gpt-4-turbo'
@@ -152,6 +153,7 @@ if __name__ == '__main__':
           continue  
         
         mod_prompt_instruction = generate_instruction_prompts(dataset_name, prompt, function, entry=dataset.iloc[ind])
+
         levels_list = [[], [], []]
         inference_not_done = True
         number_of_trials = 0
@@ -200,7 +202,6 @@ if __name__ == '__main__':
       # Reprhasing Prompt Level #
       ###########################
       else:
-        
         if dataset_name == 'humanevalplus':
           # If we already rephrased this task
           if len(dat[str(dataset.iloc[ind]['task_id']).split('/')[-1]]['level 1']) > 1 and \

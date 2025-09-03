@@ -21,7 +21,10 @@ def ast_parse_f(x, loc):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--dataset', default=None)
+    parser.add_argument('-t', '--threshold', default=0.5, type=float)
     args = parser.parse_args()
+
+    threshold = float(args.threshold)
 
     if args.dataset == 'humanevalplus':
         task_nb = 164
@@ -32,7 +35,7 @@ if __name__ == '__main__':
         raise Exception(f"Dataset {args.dataset} not recognised")
 
     eval_list, sim_list = [], []
-    models_list = ['deepseek', 'magicoder', 'llama', 'gpt', 'gemma']
+    models_list = ['deepseek', 'magicoder', 'llama', 'gpt', 'gemma', 'deepseek-chat', 'qwen-coder', 'yi-coder']
     for model in models_list:
         with open(os.path.join('..', 'data', args.dataset.lower(), 'post_test', f'results_{args.dataset}_{model}_eval.json'), 'r') as f:
                 eval_list.append(json.load(f))
@@ -50,18 +53,17 @@ if __name__ == '__main__':
             for key in eval_l[str(ind_key)]:
                 if key != 'original prompt':
                     for ind_seed in range(len(eval_l[str(ind_key)][key])):
-                        # Taking only sample that are 50% similar to a correct code (avoid extremly incorrect code)
-                        # CodeBLEU original paper gives that 0.3 CodeBLEU ~ 3 / 5 HumanJudgment so above 0.5 should give code that are not junk
-                        if sim_list[mod][str(oracle_codes.index[oracle_codes['class_id'] == str(ind_key).split('ClassEval_')[-1]].values[0])][key][ind_seed] > 0.5:                        
+                        sim_ = sim_list[mod][str(oracle_codes.index[oracle_codes['class_id'] == str(ind_key).split('ClassEval_')[-1]].values[0])][key][ind_seed]
+                        
+                        if sim_ > threshold:                        
                             try:
-                                loc = analyze(eval_l[str(ind_key)][key][ind_seed][0]).loc
+                                loc = analyze(eval_l[str(ind_key)][key][ind_seed][0]).sloc # removing comments/blank etc.
                                 ast_parse = ast_parse_f(eval_l[str(ind_key)][key][ind_seed][0], loc)
                                 code_dict[ind_key][models_list[mod]].append((eval_l[str(ind_key)][key][ind_seed][0], ast_parse))
                             # If the code does not compile, skip it
                             except Exception as e:
-                                #assert 1 == 0
                                 continue
 
-    with open(os.path.join(os.path.join('..', 'data', args.dataset.lower(), f'structure_types_{args.dataset}.json')), 'w') as f:
+    with open(os.path.join(os.path.join('..', 'data', args.dataset.lower(), f'structure_types_{args.dataset}_{args.threshold}.json')), 'w') as f:
         json.dump(code_dict, f)
 

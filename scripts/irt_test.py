@@ -143,6 +143,7 @@ if __name__ == '__main__':
 
    for i in range(2):
       plt.scatter(X_test[y_test == i, 0], X_test[y_test == i, 1])
+   plt.title('Distribution of the data (ground-truth)')
    plt.show()
 
    correct = np.ones(len(y_test))

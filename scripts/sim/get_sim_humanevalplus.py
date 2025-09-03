@@ -4,8 +4,9 @@ from codebleu import calc_codebleu
 import os
 
 res_model_list = []
+models = ['deepseek', 'magicoder', 'llama', 'gpt', 'gemma', 'deepseek-chat', 'qwen-coder', 'yi-coder']
 
-for model in ['deepseek', 'magicoder', 'llama', 'gpt', 'gemma']:
+for model in list(models):
  file_to_load = f'results_humanevalplus_{model}_eval.json'
  with open(os.path.join('..', '..', 'data', 'humanevalplus', 'post_test', file_to_load), 'r') as f:
     res_model_list.append(json.load(f))
@@ -18,7 +19,8 @@ correct_code_dict = {}
 
 for res_list_list in res_model_list:
  for ind_key in prompt.index.values:
-     correct_code_dict[ind_key] = [prompt.iloc[ind_key]['code']]
+     if ind_key not in correct_code_dict:
+        correct_code_dict[ind_key] = [prompt.iloc[ind_key]['code']]
      for key in res_list_list[str(ind_key)]:
          for ind_seed in range(len(res_list_list[str(ind_key)][key])):
              if res_list_list[str(ind_key)][key][ind_seed][1] == True:
@@ -26,7 +28,7 @@ for res_list_list in res_model_list:
 
 print("Finished building correct code corpus!")
 print("Calculating CodeBLEU metric for each fragments...")
-for p, model in enumerate(['deepseek', 'magicoder', 'llama', 'gpt', 'gemma']):
+for p, model in enumerate(models):
  file_to_save = f'results_humanevalplus_{model}_sim.json'
  avg_dict = {}
  for ind_key in prompt.index.values:
